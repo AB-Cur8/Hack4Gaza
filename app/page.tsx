@@ -1408,7 +1408,11 @@ export default function EmergencyAssessment() {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (err) {
+          console.error("video.play() failed:", err);
+        }
       }
       setShowScanner(true);
       scanQRCode();
