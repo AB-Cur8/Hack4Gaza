@@ -1716,15 +1716,8 @@ export default function EmergencyAssessment() {
 
   const generateQRFromPatient = async (patient: QRData) => {
     try {
-      const qrText = JSON.stringify(patient);
-      const qrCodeDataURL = await QRCode.toDataURL(qrText, {
-        width: 400,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-      });
+      const qrUrl = `https://hack4-gaza-jxzyi4ege-yaqubs-projects-b2a15bac.vercel.app/patient/${data.patientId}`;
+      const qrCodeDataURL = await QRCode.toDataURL(qrUrl);
 
       setQrCodeDataURL(qrCodeDataURL);
       setShowQRCode(true);

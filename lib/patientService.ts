@@ -24,6 +24,25 @@ export async function savePatient(patient: any) {
   }
 }
 
+export async function getPatientById(patientId: string) {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("*")
+    .eq("patientId", patientId)
+    .single(); // ensures only one result
+
+  if (error) {
+    console.error("❌ Error fetching patient by ID:", error.message);
+    return null;
+  }
+
+  return {
+    ...data,
+    changeLog: JSON.parse(data.changeLog || "[]"),
+    assessment: JSON.parse(data.assessment || "{}"),
+  };
+}
+
 export async function fetchPatients() {
   const { data, error } = await supabase.from("patients").select("*");
   if (error) {
