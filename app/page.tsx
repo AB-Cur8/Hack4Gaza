@@ -1337,10 +1337,8 @@ export default function EmergencyAssessment() {
       // Save current assessment before generating QR
       saveCurrentAssessment();
 
-      const qrText = JSON.stringify(qrData);
-
-      // Generate QR code using qrcode library
-      const qrCodeDataURL = await QRCode.toDataURL(qrText, {
+      const qrUrl = `https://yourdomain.com/patient/${data.patientId}`; // <-- use your actual domain
+      const qrCodeDataURL = await QRCode.toDataURL(qrUrl, {
         width: 400,
         margin: 2,
         color: {

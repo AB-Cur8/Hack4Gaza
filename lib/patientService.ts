@@ -1,56 +1,39 @@
 // lib/patientService.ts
 import { supabase } from "./supabase";
 
-// 🔹 Save or update a patient
-export async function savePatient(data: any) {
-  const {
-    patientId,
-    name,
-    age,
-    gender,
-    gcs,
-    heartRate,
-    bloodPressure,
-    respiratoryRate,
-    outcome,
-    outcomeNotes,
-    lastUpdatedBy,
-    deviceId,
-    version,
-    assessment,
-  } = data;
-
+export async function savePatient(patient: any) {
   const { error } = await supabase.from("patients").upsert([
     {
-      patient_id: patientId,
-      name,
-      age,
-      gender,
-      gcs,
-      heart_rate: heartRate,
-      blood_pressure: bloodPressure,
-      respiratory_rate: respiratoryRate,
-      outcome,
-      outcome_notes: outcomeNotes,
-      last_updated_by: lastUpdatedBy,
-      device_id: deviceId,
-      version,
-      assessment: JSON.stringify(assessment), // ✅ must be stringified
-      last_updated: new Date(),
+      patientId: patient.patientId,
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      summary: patient.summary || "",
+      deviceId: patient.deviceId || "unknown",
+      language: patient.language || "en",
+      lastUpdated: new Date().toISOString(),
+      distributedVersion: patient.distributedVersion || 1,
+      timestamp: patient.timestamp || new Date().toISOString(),
+      changeLog: JSON.stringify(patient.changeLog || []),
+      assessment: JSON.stringify(patient.assessment),
     },
   ]);
 
-  if (error) throw error;
+  if (error) {
+    console.error("❌ Error saving to Supabase:", error.message);
+  }
 }
 
-// 🔹 Get a patient by ID
-export async function getPatientById(patientId: string) {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("*")
-    .eq("patient_id", patientId)
-    .single();
+export async function fetchPatients() {
+  const { data, error } = await supabase.from("patients").select("*");
+  if (error) {
+    console.error("❌ Error loading patients:", error.message);
+    return [];
+  }
 
-  if (error) throw error;
-  return data;
+  return data.map((p) => ({
+    ...p,
+    changeLog: JSON.parse(p.changeLog || "[]"),
+    assessment: JSON.parse(p.assessment || "{}"),
+  }));
 }
