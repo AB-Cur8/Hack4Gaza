@@ -2885,12 +2885,16 @@ export default function EmergencyAssessment() {
 
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex gap-4">
-                          <span>GCS: {patient.assessment.gcs}</span>
+                          <span>GCS: {patient.assessment.gcs || ""}</span>
                           {patient.assessment.heartRate && (
-                            <span>HR: {patient.assessment.heartRate}</span>
+                            <span>
+                              HR: {patient.assessment.heartRate || ""}
+                            </span>
                           )}
                           {patient.assessment.bloodPressure && (
-                            <span>BP: {patient.assessment.bloodPressure}</span>
+                            <span>
+                              BP: {patient.assessment.bloodPressure || ""}
+                            </span>
                           )}
                         </div>
                         <div className="flex gap-2">
