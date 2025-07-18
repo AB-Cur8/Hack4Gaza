@@ -40,6 +40,8 @@ import {
   Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { savePatient } from "@/lib/patientService";
+import { supabase } from "@/lib/supabase"; // Adjust the import path as needed
 
 import QRCode from "qrcode";
 import jsQR from "jsqr";
@@ -752,45 +754,40 @@ export default function EmergencyAssessment() {
 
   // Load patients from localStorage on component mount
   useEffect(() => {
-    const savedPatients = localStorage.getItem("emergencyPatients");
-    if (savedPatients) {
-      try {
-        const patients = JSON.parse(savedPatients);
-        // Migrate old data to include distributed update fields
-        const migratedPatients = patients.map((patient: any) => ({
-          ...patient,
-          distributedVersion: patient.distributedVersion || 1,
-          lastUpdated: patient.lastUpdated || patient.timestamp,
-          lastUpdatedBy: patient.lastUpdatedBy || "Unknown",
-          deviceId: patient.deviceId || "Unknown",
-          changeLog: patient.changeLog || [],
-          assessment: {
-            ...patient.assessment,
-            outcome: patient.assessment.outcome || "pending",
-            outcomeNotes: patient.assessment.outcomeNotes || "",
-            lastUpdated: patient.assessment.lastUpdated || patient.timestamp,
-            lastUpdatedBy: patient.assessment.lastUpdatedBy || "Unknown",
-            deviceId: patient.assessment.deviceId || "Unknown",
-            version: patient.assessment.version || 1,
-            changeLog: patient.assessment.changeLog || [],
-          },
-        }));
-        setPatientList(
-          migratedPatients.sort(
-            (a: QRData, b: QRData) =>
-              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          )
-        );
-      } catch (error) {
-        console.error("Error loading patients:", error);
+    async function fetchPatients() {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("last_updated", { ascending: false });
+
+      if (error) {
+        console.error("❌ Error fetching patients from Supabase:", error);
+        toast({
+          title: "Error fetching patient data",
+          variant: "destructive",
+        });
+        return;
       }
+
+      // Parse assessment object from JSON if it's stored as text
+      const parsed = data.map((p) => ({
+        ...p,
+        assessment:
+          typeof p.assessment === "string"
+            ? JSON.parse(p.assessment)
+            : p.assessment,
+      }));
+
+      setPatientList(parsed);
     }
+
+    fetchPatients();
   }, []);
 
-  // Save patients to localStorage whenever the list changes
-  useEffect(() => {
-    localStorage.setItem("emergencyPatients", JSON.stringify(patientList));
-  }, [patientList]);
+  // // Save patients to localStorage whenever the list changes
+  // useEffect(() => {
+  //   localStorage.setItem("emergencyPatients", JSON.stringify(patientList));
+  // }, [patientList]);
 
   // Update data when user name or device ID changes
   useEffect(() => {
@@ -871,69 +868,35 @@ export default function EmergencyAssessment() {
     };
   };
 
-  const saveCurrentAssessment = (changedFields?: string[]) => {
-    const now = new Date().toISOString();
-    const changes = changedFields || [];
-
-    // Create change log entry if there are changes
-    const newChangeLog = [...data.changeLog];
-    if (changes.length > 0) {
-      newChangeLog.unshift(addChangeLogEntry(changes));
-      // Keep only last 3 entries
-      if (newChangeLog.length > 3) {
-        newChangeLog.splice(3);
-      }
-    }
-
-    const currentAssessment: QRData = {
-      version: "2.0", // Updated version for distributed updates
-      timestamp: now,
-      language: language,
-      patientId: data.patientId,
-      assessment: {
-        ...data,
-        photos: [], // Exclude photos for storage
-        lastUpdated: now,
-        lastUpdatedBy: userName,
-        deviceId: deviceId,
-        version: data.version + (changes.length > 0 ? 1 : 0),
-        changeLog: newChangeLog,
-      },
-      summary: generateSummary(),
-      distributedVersion: data.version + (changes.length > 0 ? 1 : 0),
-      lastUpdated: now,
-      lastUpdatedBy: userName,
-      deviceId: deviceId,
-      changeLog: newChangeLog,
+  async function saveCurrentAssessment(changes?: string[]) {
+    const updatedPatient = {
+      ...data,
+      lastUpdated: new Date().toISOString(),
+      version: data.version + 1,
+      changeLog: [
+        ...(data.changeLog || []),
+        {
+          updatedBy: data.lastUpdatedBy,
+          deviceId: data.deviceId,
+          timestamp: new Date().toISOString(),
+          changes: changes || [],
+        },
+      ],
     };
 
-    // Check if patient already exists (update) or is new (add)
-    const existingIndex = patientList.findIndex(
-      (p) => p.patientId === data.patientId
-    );
-    if (existingIndex >= 0) {
-      const updatedList = [...patientList];
-      updatedList[existingIndex] = currentAssessment;
-      setPatientList(
-        updatedList.sort(
-          (a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        )
-      );
-    } else {
-      setPatientList((prev) => [currentAssessment, ...prev]);
-    }
+    try {
+      // 🔥 Save to Supabase only
+      await savePatient(updatedPatient);
 
-    // Update current data with new version info
-    setData((prev) => ({
-      ...prev,
-      lastUpdated: now,
-      lastUpdatedBy: userName,
-      deviceId: deviceId,
-      version: prev.version + (changes.length > 0 ? 1 : 0),
-      changeLog: newChangeLog,
-    }));
-  };
+      // Optional: update local state in the app (not localStorage)
+      // setSelectedPatient(updatedPatient);
+      // updatePatientInList(updatedPatient); // just your frontend list
+      // toast({ title: "✅ Patient saved to Supabase" });
+    } catch (error) {
+      console.error("❌ Failed to save to Supabase:", error);
+      toast({ title: "Error saving to Supabase", variant: "destructive" });
+    }
+  }
 
   const updatePatientOutcome = (
     patientId: string,
