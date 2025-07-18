@@ -3034,10 +3034,12 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label htmlFor="edit-gender">{t.gender}</Label>
                       <Select
-                        value={editableData.gender}
-                        onValueChange={(value) =>
-                          updateEditableData("gender", value)
+                        value={
+                          typeof data.gender === "string"
+                            ? data.gender
+                            : undefined
                         }
+                        onValueChange={(value) => updateData("gender", value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
@@ -3338,27 +3340,35 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label>{t.capillaryRefill}</Label>
                       <Select
-                        value={editableData.capillaryRefill}
+                        value={
+                          typeof data.capillaryRefill === "string"
+                            ? data.capillaryRefill
+                            : undefined
+                        }
                         onValueChange={(value) =>
-                          updateEditableData("capillaryRefill", value)
+                          updateData("capillaryRefill", value)
                         }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="<2s">{"<2s"}</SelectItem>
+                          <SelectItem value="<2s">&lt;2s</SelectItem>
                           <SelectItem value="2-3s">2-3s</SelectItem>
-                          <SelectItem value=">3s">{">3s"}</SelectItem>
+                          <SelectItem value=">3s">&gt;3s</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label>{t.pulseQuality}</Label>
                       <Select
-                        value={editableData.pulseQuality}
+                        value={
+                          typeof data.pulseQuality === "string"
+                            ? data.pulseQuality
+                            : undefined
+                        }
                         onValueChange={(value) =>
-                          updateEditableData("pulseQuality", value)
+                          updateData("pulseQuality", value)
                         }
                       >
                         <SelectTrigger>
@@ -3537,9 +3547,13 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label>{t.skinCondition}</Label>
                       <Select
-                        value={editableData.skinCondition}
+                        value={
+                          typeof data.skinCondition === "string"
+                            ? data.skinCondition
+                            : undefined
+                        }
                         onValueChange={(value) =>
-                          updateEditableData("skinCondition", value)
+                          updateData("skinCondition", value)
                         }
                       >
                         <SelectTrigger>
@@ -3947,7 +3961,11 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.oxygenSupport}</Label>
                   <Select
-                    value={data.oxygenSupport}
+                    value={
+                      typeof data.oxygenSupport === "string"
+                        ? data.oxygenSupport
+                        : undefined
+                    }
                     onValueChange={(value) =>
                       updateData("oxygenSupport", value)
                     }
@@ -3972,7 +3990,11 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.breathSounds}</Label>
                   <Select
-                    value={data.breathSounds}
+                    value={
+                      typeof data.breathSounds === "string"
+                        ? data.breathSounds
+                        : undefined
+                    }
                     onValueChange={(value) => updateData("breathSounds", value)}
                   >
                     <SelectTrigger>
@@ -4134,7 +4156,9 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.gcsScore}</Label>
                     <Select
-                      value={data.gcs}
+                      value={
+                        typeof data.gcs === "string" ? data.gcs : undefined
+                      }
                       onValueChange={(value) => updateData("gcs", value)}
                     >
                       <SelectTrigger>
@@ -4154,7 +4178,11 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.pupils}</Label>
                     <Select
-                      value={data.pupils}
+                      value={
+                        typeof data.pupils === "string"
+                          ? data.pupils
+                          : undefined
+                      }
                       onValueChange={(value) => updateData("pupils", value)}
                     >
                       <SelectTrigger>
@@ -4175,7 +4203,11 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.motorResponse}</Label>
                   <Select
-                    value={data.motorResponse}
+                    value={
+                      typeof data.motorResponse === "string"
+                        ? data.motorResponse
+                        : undefined
+                    }
                     onValueChange={(value) =>
                       updateData("motorResponse", value)
                     }
