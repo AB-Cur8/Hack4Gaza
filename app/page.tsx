@@ -1,11 +1,6 @@
 "use client";
 
 import type React from "react";
-import QRCode from "qrcode";
-import jsQR from "jsqr";
-import QRScanner from "../components/qr-scanner"; // adjust path if needed
-
-const [showScanner, setShowScanner] = useState(false);
 
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +40,10 @@ import {
   Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+import QRCode from "qrcode";
+import jsQR from "jsqr";
+import QRScanner from "../components/qr-scanner"; // adjust path if needed
 
 interface ChangeLogEntry {
   timestamp: string;
