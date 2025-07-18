@@ -3,6 +3,9 @@
 import type React from "react";
 import QRCode from "qrcode";
 import jsQR from "jsqr";
+import QRScanner from "../components/qr-scanner"; // adjust path if needed
+
+const [showScanner, setShowScanner] = useState(false);
 
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1341,6 +1344,12 @@ export default function EmergencyAssessment() {
     return summary;
   };
 
+  function handleQRScanned(data: string) {
+    console.log("QR Code Scanned:", data);
+    // Do something with `data`, like load a patient by ID
+    toast({ title: "QR Code Scanned", description: data });
+  }
+
   // QR Code Generation (replace your current generateQRCode function)
   const generateQRCode = async () => {
     try {
@@ -2576,7 +2585,7 @@ export default function EmergencyAssessment() {
                 {t.generateQrCode}
               </Button>
               <Button
-                onClick={startScanning}
+                onClick={() => setShowScanner(true)}
                 variant="outline"
                 className="flex-1 bg-transparent"
               >
@@ -4377,7 +4386,7 @@ export default function EmergencyAssessment() {
             {t.generateSummary}
           </Button>
           <Button
-            onClick={startScanning}
+            onClick={() => setShowScanner(true)}
             variant="outline"
             className="flex-1 bg-transparent"
           >
@@ -4386,6 +4395,12 @@ export default function EmergencyAssessment() {
           </Button>
         </div>
       </div>
+      {showScanner && (
+        <QRScanner
+          onDetected={handleQRScanned}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }
