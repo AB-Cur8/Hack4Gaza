@@ -1337,7 +1337,8 @@ export default function EmergencyAssessment() {
       // Save current assessment before generating QR
       saveCurrentAssessment();
 
-      const qrUrl = `https://hack4-gaza.vercel.app/patient/${data.patientId}`;
+      // const qrUrl = `https://hack4-gaza.vercel.app/patient/${data.patientId}`;
+      const qrUrl = `https://hack4-gaza.vercel.app`;
       const qrCodeDataURL = await QRCode.toDataURL(qrUrl, {
         width: 400,
         margin: 2,
