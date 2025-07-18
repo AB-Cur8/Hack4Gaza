@@ -955,7 +955,7 @@ export default function EmergencyAssessment() {
   };
 
   const resolveVersionConflict = (acceptIncoming: boolean) => {
-    if (!conflictData) return;
+    if (!conflictData) return null;
 
     if (acceptIncoming) {
       // Accept incoming version
@@ -1093,12 +1093,12 @@ export default function EmergencyAssessment() {
   const filteredPatients = patientList.filter((patient) => {
     const query = searchQuery.toLowerCase();
     return (
-      patient.patientId.toLowerCase().includes(query) ||
-      patient.assessment.name.toLowerCase().includes(query) ||
-      patient.summary.toLowerCase().includes(query) ||
-      `gcs ${patient.assessment.gcs}`.includes(query) ||
-      (patient.assessment.bleeding && "bleeding".includes(query)) ||
-      patient.assessment.outcome.toLowerCase().includes(query)
+      patient.patientId?.toLowerCase().includes(query) ||
+      patient.assessment?.name?.toLowerCase().includes(query) ||
+      patient.summary?.toLowerCase().includes(query) ||
+      `gcs ${patient.assessment?.gcs || ""}`.toLowerCase().includes(query) ||
+      (patient.assessment?.bleeding && "bleeding".includes(query)) ||
+      patient.assessment?.outcome?.toLowerCase().includes(query)
     );
   });
 
@@ -1133,7 +1133,7 @@ export default function EmergencyAssessment() {
   };
 
   const savePatientChanges = () => {
-    if (!selectedPatient) return;
+    if (!selectedPatient) return null;
 
     const now = new Date().toISOString();
     const changes = detectChanges(selectedPatient.assessment, editableData);
@@ -1399,10 +1399,10 @@ export default function EmergencyAssessment() {
   const scanQRCode = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas) return null;
 
     const context = canvas.getContext("2d");
-    if (!context) return;
+    if (!context) return null;
 
     const scan = () => {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -1606,7 +1606,7 @@ export default function EmergencyAssessment() {
   // Alternative: File-based QR scanning for devices without camera
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) return null;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1614,7 +1614,7 @@ export default function EmergencyAssessment() {
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+        if (!ctx) return null;
 
         canvas.width = img.width;
         canvas.height = img.height;
@@ -2695,7 +2695,7 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.red.total} ({stats.triage.red.deceased}{" "}
-                      {t.deceased.toLowerCase()})
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -2705,7 +2705,8 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.yellow.total} (
-                      {stats.triage.yellow.deceased} {t.deceased.toLowerCase()})
+                      {stats.triage.yellow.deceased}{" "}
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -2715,7 +2716,7 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.green.total} ({stats.triage.green.deceased}{" "}
-                      {t.deceased.toLowerCase()})
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                 </div>
