@@ -1322,8 +1322,46 @@ export default function EmergencyAssessment() {
 
   function handleQRScanned(data: string) {
     console.log("QR Code Scanned:", data);
-    // Do something with `data`, like load a patient by ID
-    toast({ title: "QR Code Scanned", description: data });
+    console.log("QR Code Data Length:", data.length);
+    console.log("QR Code Data Preview:", data.substring(0, 100) + "...");
+    
+    try {
+      // Check if it's a URL (old format)
+      if (data.startsWith("http")) {
+        console.log("Detected old URL-based QR code");
+        toast({
+          title: "Old QR Code Format",
+          description: "This QR code contains a URL. Please generate a new QR code with patient data.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Try to parse the QR data as JSON
+      const qrData: QRData = JSON.parse(data);
+      console.log("Parsed QR Data:", qrData);
+      
+      // Validate the QR data structure
+      if (qrData.version && qrData.patientId && qrData.assessment) {
+        setImportedData(qrData);
+        setShowImportConfirm(true);
+        setShowScanner(false);
+        
+        toast({
+          title: "QR Code Scanned Successfully",
+          description: `Patient ${qrData.patientId} data found`,
+        });
+      } else {
+        throw new Error("Invalid QR data structure");
+      }
+    } catch (error) {
+      console.error("Failed to parse QR code data:", error);
+      toast({
+        title: "Invalid QR Code",
+        description: "QR code does not contain valid patient data. Please generate a new QR code.",
+        variant: "destructive",
+      });
+    }
   }
 
   // QR Code Generation (replace your current generateQRCode function)
@@ -1351,9 +1389,10 @@ export default function EmergencyAssessment() {
       // Save current assessment before generating QR
       saveCurrentAssessment();
 
-      // const qrUrl = `https://hack4-gaza.vercel.app/patient/${data.patientId}`;
-      const qrUrl = `https://hack4-gaza.vercel.app`;
-      const qrCodeDataURL = await QRCode.toDataURL(qrUrl, {
+      // Generate QR code with the actual patient data
+      const qrDataString = JSON.stringify(qrData);
+      console.log("Generating QR code with data:", qrDataString.substring(0, 200) + "...");
+      const qrCodeDataURL = await QRCode.toDataURL(qrDataString, {
         width: 400,
         margin: 2,
         color: {
@@ -1367,7 +1406,7 @@ export default function EmergencyAssessment() {
 
       toast({
         title: "QR Code Generated",
-        description: "QR code contains complete patient assessment data",
+        description: `QR code contains complete patient data for ${data.patientId}`,
       });
     } catch (error) {
       console.error("QR Generation Error:", error);

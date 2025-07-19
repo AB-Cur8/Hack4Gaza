@@ -141,6 +141,8 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
         
         if (code) {
           console.log("QRScanner: QR code detected:", code.data);
+          console.log("QRScanner: QR code data length:", code.data.length);
+          console.log("QRScanner: QR code data preview:", code.data.substring(0, 100) + "...");
           onDetected(code.data);
           stopCamera();
         } else if (!isUnmounted.current) {
