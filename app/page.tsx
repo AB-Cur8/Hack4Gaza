@@ -4363,7 +4363,7 @@ export default function EmergencyAssessment() {
           </Button>
         </div>
       </div>
-      {showScanner && (
+      {showScanner && isClient && (
         <QRScanner
           onDetected={handleQRScanned}
           onClose={() => setShowScanner(false)}
