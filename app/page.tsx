@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 
 import { useState, useRef, useEffect } from "react";
@@ -655,9 +654,7 @@ export default function EmergencyAssessment() {
   const [importedData, setImportedData] = useState<QRData | null>(null);
   const [qrCodeDataURL, setQrCodeDataURL] = useState("");
   const [language, setLanguage] = useState<"en" | "ar">("en");
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  // Video and canvas refs are now handled by the QRScanner component
 
   // Add isClient state for client-only rendering
   const [isClient, setIsClient] = useState(false);
@@ -1382,94 +1379,7 @@ export default function EmergencyAssessment() {
     }
   };
 
-  // Improved QR Code Scanning
-  const startScanning = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment", // Use back camera
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch (err) {
-          console.error("video.play() failed:", err);
-        }
-      }
-      setShowScanner(true);
-      scanQRCode();
-    } catch (error) {
-      console.error("Camera error:", error);
-      toast({
-        title: t.cameraPermissionDenied,
-        description: t.enableCamera,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Proper QR Code Scanning with jsQR
-  const scanQRCode = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return null;
-
-    const context = canvas.getContext("2d");
-    if (!context) return null;
-
-    const scan = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = context.getImageData(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-
-        // Use jsQR to detect QR codes
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
-        });
-
-        if (code) {
-          try {
-            const qrData: QRData = JSON.parse(code.data);
-            setImportedData(qrData);
-            setShowImportConfirm(true);
-            stopScanning();
-
-            toast({
-              title: "QR Code Scanned",
-              description: "Patient data found in QR code",
-            });
-            return;
-          } catch (error) {
-            console.error("Invalid QR code data:", error);
-            toast({
-              title: "Invalid QR Code",
-              description: "QR code does not contain valid patient data",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-
-      if (showScanner) {
-        requestAnimationFrame(scan);
-      }
-    };
-
-    scan();
-  };
+  // QR Code Scanning is handled by the QRScanner component
 
   // Simulate QR code scanning result for demo
   const simulateQRScan = () => {
@@ -1553,7 +1463,7 @@ export default function EmergencyAssessment() {
 
     setImportedData(mockQRData);
     setShowImportConfirm(true);
-    stopScanning();
+    setShowScanner(false);
   };
 
   const confirmImport = () => {
@@ -1614,13 +1524,7 @@ export default function EmergencyAssessment() {
     setImportedData(null);
   };
 
-  const stopScanning = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setShowScanner(false);
-  };
+  // Camera stopping is now handled by the QRScanner component
   // Alternative: File-based QR scanning for devices without camera
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1966,72 +1870,7 @@ export default function EmergencyAssessment() {
     );
   }
 
-  // QR Scanner Modal
-  if (showScanner) {
-    return (
-      <div
-        className={`min-h-screen bg-black p-4 ${isRTL ? "rtl" : "ltr"}`}
-        dir={isRTL ? "rtl" : "ltr"}
-      >
-        <Card className="max-w-md mx-auto bg-black border-gray-700">
-          <CardHeader>
-            <div className="flex items-center justify-between text-white">
-              <CardTitle className="flex items-center gap-2">
-                <ScanLine className="h-5 w-5" />
-                {t.scanningQrCode}
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={stopScanning}
-                className="text-white"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-6 pt-0 space-y-4 flex flex-col items-center justify-center">
-              <div className="relative flex justify-center items-center" style={{ width: 300, height: 300 }}>
-                <video
-                  ref={videoRef}
-                  className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
-                  style={{ width: 300, height: 300 }}
-                  autoPlay
-                  playsInline
-                  muted
-                />
-                {/* Square scan area overlay, always centered and square */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="relative" style={{ width: 220, height: 220 }}>
-                    <div className="absolute inset-0 border-4 border-red-500 rounded-lg" />
-                    {/* Corner markers ... */}
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-300 text-center">
-                {t.pointCameraAtQr}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  onClick={simulateQRScan}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  Simulate Scan (Demo)
-                </Button>
-                <Button
-                  onClick={stopScanning}
-                  className="flex-1 bg-white text-black border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                >
-                  {t.stopScanning}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // QR Scanner is now handled by the QRScanner component
 
   // Import Confirmation Modal
   if (showImportConfirm && importedData) {
@@ -4375,3 +4214,4 @@ export default function EmergencyAssessment() {
     </div>
   );
 }
+
