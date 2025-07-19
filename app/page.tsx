@@ -605,6 +605,46 @@ const generateDeviceId = (): string => {
   return Math.random().toString(36).substr(2, 8).toUpperCase();
 };
 
+// Helper function to create default AssessmentData
+const createDefaultAssessmentData = (userName: string, deviceId: string): AssessmentData => ({
+  patientId: generatePatientId(),
+  name: "",
+  age: "",
+  gender: "",
+  airwayPatent: true,
+  airwayObstruction: "",
+  airwayInterventions: [],
+  respiratoryRate: "",
+  spO2: "",
+  oxygenSupport: "Room Air",
+  breathSounds: "Normal vesicular",
+  breathingConcerns: [],
+  heartRate: "",
+  bloodPressure: "",
+  capillaryRefill: "<2s",
+  pulseQuality: "Strong",
+  bleeding: false,
+  bleedingLocation: "",
+  gcs: "15",
+  pupils: "PEARL",
+  motorResponse: "Normal",
+  neurologicalConcerns: [],
+  temperature: "",
+  skinCondition: "Normal",
+  injuries: [],
+  exposureConcerns: "",
+  photos: [],
+  location: "",
+  additionalNotes: "",
+  outcome: "pending",
+  outcomeNotes: "",
+  lastUpdated: new Date().toISOString(),
+  lastUpdatedBy: userName,
+  deviceId: deviceId,
+  version: 1,
+  changeLog: [],
+});
+
 export default function EmergencyAssessment() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("patient");
@@ -706,47 +746,12 @@ export default function EmergencyAssessment() {
     }
   }, []);
 
-  const [data, setData] = useState<AssessmentData | null>(null);
+  const [data, setData] = useState<AssessmentData>(() => createDefaultAssessmentData("", ""));
 
   useEffect(() => {
-    setData({
-      patientId: generatePatientId(),
-      name: "",
-      age: "",
-      gender: "",
-      airwayPatent: true,
-      airwayObstruction: "",
-      airwayInterventions: [],
-      respiratoryRate: "",
-      spO2: "",
-      oxygenSupport: "Room Air",
-      breathSounds: "Normal vesicular",
-      breathingConcerns: [],
-      heartRate: "",
-      bloodPressure: "",
-      capillaryRefill: "<2s",
-      pulseQuality: "Strong",
-      bleeding: false,
-      bleedingLocation: "",
-      gcs: "15",
-      pupils: "PEARL",
-      motorResponse: "Normal",
-      neurologicalConcerns: [],
-      temperature: "",
-      skinCondition: "Normal",
-      injuries: [],
-      exposureConcerns: "",
-      photos: [],
-      location: "",
-      additionalNotes: "",
-      outcome: "pending",
-      outcomeNotes: "",
-      lastUpdated: new Date().toISOString(),
-      lastUpdatedBy: userName,
-      deviceId: deviceId,
-      version: 1,
-      changeLog: [],
-    });
+    if (userName && deviceId) {
+      setData(createDefaultAssessmentData(userName, deviceId));
+    }
   }, [userName, deviceId]);
 
   // Update editableData when selectedPatient changes
@@ -881,7 +886,7 @@ export default function EmergencyAssessment() {
       lastUpdated: new Date().toISOString(),
       version: data.version + 1,
       changeLog: [
-        ...(data.changeLog || []),
+        ...data.changeLog,
         {
           updatedBy: data.lastUpdatedBy,
           deviceId: data.deviceId,
@@ -962,7 +967,7 @@ export default function EmergencyAssessment() {
   };
 
   const resolveVersionConflict = (acceptIncoming: boolean) => {
-    if (!conflictData) return;
+    if (!conflictData) return null;
 
     if (acceptIncoming) {
       // Accept incoming version
@@ -1103,9 +1108,9 @@ export default function EmergencyAssessment() {
       (patient.patientId?.toLowerCase() || "").includes(query) ||
       (patient.assessment?.name?.toLowerCase() || "").includes(query) ||
       (patient.summary?.toLowerCase() || "").includes(query) ||
-      `gcs ${patient.assessment?.gcs}`.includes(query) ||
+      (`gcs ${patient.assessment?.gcs || ""}`.toLowerCase().includes(query)) ||
       (patient.assessment?.bleeding && "bleeding".includes(query)) ||
-      patient.assessment?.outcome?.toLowerCase().includes(query)
+      (patient.assessment?.outcome?.toLowerCase() || "").includes(query)
     );
   });
 
@@ -1140,7 +1145,7 @@ export default function EmergencyAssessment() {
   };
 
   const savePatientChanges = () => {
-    if (!selectedPatient) return;
+    if (!selectedPatient) return null;
 
     const now = new Date().toISOString();
     const changes = detectChanges(selectedPatient.assessment, editableData);
@@ -1344,7 +1349,8 @@ export default function EmergencyAssessment() {
       // Save current assessment before generating QR
       saveCurrentAssessment();
 
-      const qrUrl = `https://yourdomain.com/patient/${data.patientId}`; // <-- use your actual domain
+      // const qrUrl = `https://hack4-gaza.vercel.app/patient/${data.patientId}`;
+      const qrUrl = `https://hack4-gaza.vercel.app`;
       const qrCodeDataURL = await QRCode.toDataURL(qrUrl, {
         width: 400,
         margin: 2,
@@ -1406,10 +1412,10 @@ export default function EmergencyAssessment() {
   const scanQRCode = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas) return null;
 
     const context = canvas.getContext("2d");
-    if (!context) return;
+    if (!context) return null;
 
     const scan = () => {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -1613,7 +1619,7 @@ export default function EmergencyAssessment() {
   // Alternative: File-based QR scanning for devices without camera
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) return null;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1621,7 +1627,7 @@ export default function EmergencyAssessment() {
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+        if (!ctx) return null;
 
         canvas.width = img.width;
         canvas.height = img.height;
@@ -2702,7 +2708,7 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.red.total} ({stats.triage.red.deceased}{" "}
-                      {t.deceased.toLowerCase()})
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -2712,7 +2718,8 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.yellow.total} (
-                      {stats.triage.yellow.deceased} {t.deceased.toLowerCase()})
+                      {stats.triage.yellow.deceased}{" "}
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -2722,7 +2729,7 @@ export default function EmergencyAssessment() {
                     </span>
                     <span className="font-semibold">
                       {stats.triage.green.total} ({stats.triage.green.deceased}{" "}
-                      {t.deceased.toLowerCase()})
+                      {(t.deceased || "").toLowerCase()})
                     </span>
                   </div>
                 </div>
@@ -2890,12 +2897,16 @@ export default function EmergencyAssessment() {
 
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex gap-4">
-                          <span>GCS: {patient.assessment.gcs}</span>
+                          <span>GCS: {patient.assessment.gcs || ""}</span>
                           {patient.assessment.heartRate && (
-                            <span>HR: {patient.assessment.heartRate}</span>
+                            <span>
+                              HR: {patient.assessment.heartRate || ""}
+                            </span>
                           )}
                           {patient.assessment.bloodPressure && (
-                            <span>BP: {patient.assessment.bloodPressure}</span>
+                            <span>
+                              BP: {patient.assessment.bloodPressure || ""}
+                            </span>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -3664,7 +3675,7 @@ export default function EmergencyAssessment() {
     );
   }
 
-  if (!data) return null; // or <div>Loading...</div>
+
 
   // Main Assessment View
   return (
