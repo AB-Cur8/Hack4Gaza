@@ -659,6 +659,10 @@ export default function EmergencyAssessment() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Add isClient state for client-only rendering
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
+
   const t = translations[language];
   const isRTL = language === "ar";
 
@@ -2016,9 +2020,8 @@ export default function EmergencyAssessment() {
                   Simulate Scan (Demo)
                 </Button>
                 <Button
-                  variant="outline"
                   onClick={stopScanning}
-                  className="flex-1 bg-transparent"
+                  className="flex-1 bg-white text-black border border-input hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
                 >
                   {t.stopScanning}
                 </Button>
