@@ -706,49 +706,56 @@ export default function EmergencyAssessment() {
     }
   }, []);
 
-  const [data, setData] = useState<AssessmentData>({
-    patientId: generatePatientId(),
-    name: "",
-    age: "",
-    gender: "",
-    airwayPatent: true,
-    airwayObstruction: "",
-    airwayInterventions: [],
-    respiratoryRate: "",
-    spO2: "",
-    oxygenSupport: "Room Air",
-    breathSounds: "Normal vesicular",
-    breathingConcerns: [],
-    heartRate: "",
-    bloodPressure: "",
-    capillaryRefill: "<2s",
-    pulseQuality: "Strong",
-    bleeding: false,
-    bleedingLocation: "",
-    gcs: "15",
-    pupils: "PEARL",
-    motorResponse: "Normal",
-    neurologicalConcerns: [],
-    temperature: "",
-    skinCondition: "Normal",
-    injuries: [],
-    exposureConcerns: "",
-    photos: [],
-    location: "",
-    additionalNotes: "",
-    outcome: "pending",
-    outcomeNotes: "",
-    lastUpdated: new Date().toISOString(),
-    lastUpdatedBy: userName,
-    deviceId: deviceId,
-    version: 1,
-    changeLog: [],
-  });
+  const [data, setData] = useState<AssessmentData | null>(null);
+
+  useEffect(() => {
+    setData({
+      patientId: generatePatientId(),
+      name: "",
+      age: "",
+      gender: "",
+      airwayPatent: true,
+      airwayObstruction: "",
+      airwayInterventions: [],
+      respiratoryRate: "",
+      spO2: "",
+      oxygenSupport: "Room Air",
+      breathSounds: "Normal vesicular",
+      breathingConcerns: [],
+      heartRate: "",
+      bloodPressure: "",
+      capillaryRefill: "<2s",
+      pulseQuality: "Strong",
+      bleeding: false,
+      bleedingLocation: "",
+      gcs: "15",
+      pupils: "PEARL",
+      motorResponse: "Normal",
+      neurologicalConcerns: [],
+      temperature: "",
+      skinCondition: "Normal",
+      injuries: [],
+      exposureConcerns: "",
+      photos: [],
+      location: "",
+      additionalNotes: "",
+      outcome: "pending",
+      outcomeNotes: "",
+      lastUpdated: new Date().toISOString(),
+      lastUpdatedBy: userName,
+      deviceId: deviceId,
+      version: 1,
+      changeLog: [],
+    });
+  }, [userName, deviceId]);
 
   // Update editableData when selectedPatient changes
   useEffect(() => {
     if (selectedPatient) {
-      setEditableData(selectedPatient.assessment);
+      setEditableData({
+        ...selectedPatient.assessment,
+        photos: (selectedPatient.assessment as any).photos ?? [],
+      });
     }
   }, [selectedPatient]);
 
@@ -1093,12 +1100,12 @@ export default function EmergencyAssessment() {
   const filteredPatients = patientList.filter((patient) => {
     const query = searchQuery.toLowerCase();
     return (
-      patient.patientId.toLowerCase().includes(query) ||
-      patient.assessment.name.toLowerCase().includes(query) ||
-      patient.summary.toLowerCase().includes(query) ||
-      `gcs ${patient.assessment.gcs}`.includes(query) ||
-      (patient.assessment.bleeding && "bleeding".includes(query)) ||
-      patient.assessment.outcome.toLowerCase().includes(query)
+      (patient.patientId?.toLowerCase() || "").includes(query) ||
+      (patient.assessment?.name?.toLowerCase() || "").includes(query) ||
+      (patient.summary?.toLowerCase() || "").includes(query) ||
+      `gcs ${patient.assessment?.gcs}`.includes(query) ||
+      (patient.assessment?.bleeding && "bleeding".includes(query)) ||
+      patient.assessment?.outcome?.toLowerCase().includes(query)
     );
   });
 
@@ -3657,35 +3664,37 @@ export default function EmergencyAssessment() {
     );
   }
 
+  if (!data) return null; // or <div>Loading...</div>
+
   // Main Assessment View
   return (
     <div
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <div className="bg-blue-600 text-white p-4">
+      <div className="bg-blue-600 text-white p-3">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            <h1 className="text-lg font-bold">{t.emergencyAssessment}</h1>
+            <AlertTriangle className="h-4 w-4" />
+            <h1 className="text-base font-bold">{t.emergencyAssessment}</h1>
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentView("patientList")}
-              className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
+              className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600 text-xs px-2 py-1"
             >
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="h-3 w-3 mr-1" />
               {t.patientList}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={toggleLanguage}
-              className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
+              className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600 text-xs px-2 py-1"
             >
-              <Languages className="h-4 w-4 mr-2" />
+              <Languages className="h-3 w-3 mr-1" />
               {language === "en" ? "العربية" : "English"}
             </Button>
           </div>
@@ -3721,9 +3730,9 @@ export default function EmergencyAssessment() {
                 <CardTitle>{t.patientInformation}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-blue-50 p-3 rounded-lg border-2 border-blue-200 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-blue-800 tracking-wider">
+                <div className="bg-red-50 p-3 rounded-lg border-2 border-red-200 mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="text-2xl font-bold text-red-800 tracking-wider">
                       {data.patientId}
                     </div>
                     <div className="flex gap-2">

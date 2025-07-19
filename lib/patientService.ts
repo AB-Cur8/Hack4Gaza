@@ -9,12 +9,10 @@ export async function savePatient(patient: any) {
       age: patient.age,
       gender: patient.gender,
       summary: patient.summary || "",
-      deviceId: patient.deviceId || "unknown",
       language: patient.language || "en",
       lastUpdated: new Date().toISOString(),
       distributedVersion: patient.distributedVersion || 1,
       timestamp: patient.timestamp || new Date().toISOString(),
-      changeLog: JSON.stringify(patient.changeLog || []),
       assessment: JSON.stringify(patient.assessment),
     },
   ]);
@@ -38,8 +36,9 @@ export async function getPatientById(patientId: string) {
 
   return {
     ...data,
-    changeLog: JSON.parse(data.changeLog || "[]"),
+    changeLog: data.changeLog ? JSON.parse(data.changeLog) : [],
     assessment: JSON.parse(data.assessment || "{}"),
+    deviceId: data.deviceId || "unknown",
   };
 }
 
@@ -52,7 +51,8 @@ export async function fetchPatients() {
 
   return data.map((p) => ({
     ...p,
-    changeLog: JSON.parse(p.changeLog || "[]"),
+    changeLog: p.changeLog ? JSON.parse(p.changeLog) : [],
     assessment: JSON.parse(p.assessment || "{}"),
+    deviceId: p.deviceId || "unknown",
   }));
 }

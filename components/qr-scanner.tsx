@@ -68,7 +68,25 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center">
-      <video ref={videoRef} className="w-full h-auto max-w-md" />
+      <div className="relative w-full max-w-xs aspect-square flex items-center justify-center">
+        <video
+          ref={videoRef}
+          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
+          autoPlay
+          playsInline
+          muted
+        />
+        {/* Square scan area overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-4/5 aspect-square border-4 border-red-500 rounded-lg">
+            {/* Corner markers */}
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-red-500 rounded-tl-lg" />
+            <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-red-500 rounded-tr-lg" />
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-red-500 rounded-bl-lg" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-red-500 rounded-br-lg" />
+          </div>
+        </div>
+      </div>
       <canvas ref={canvasRef} className="hidden" />
       <button
         className="mt-4 px-4 py-2 bg-red-600 text-white rounded"
