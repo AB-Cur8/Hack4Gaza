@@ -746,13 +746,14 @@ export default function EmergencyAssessment() {
     }
   }, []);
 
-  const [data, setData] = useState<AssessmentData>(() => createDefaultAssessmentData("", ""));
+  // --- HYDRATION FIX: data is null until client mount ---
+  const [data, setData] = useState<AssessmentData | null>(null);
 
   useEffect(() => {
-    if (userName && deviceId) {
+    if (userName && deviceId && !data) {
       setData(createDefaultAssessmentData(userName, deviceId));
     }
-  }, [userName, deviceId]);
+  }, [userName, deviceId, data]);
 
   // Update editableData when selectedPatient changes
   useEffect(() => {
@@ -804,11 +805,7 @@ export default function EmergencyAssessment() {
   // Update data when user name or device ID changes
   useEffect(() => {
     if (userName && deviceId) {
-      setData((prev) => ({
-        ...prev,
-        lastUpdatedBy: userName,
-        deviceId: deviceId,
-      }));
+      setData((prev) => prev ? { ...prev, lastUpdatedBy: userName, deviceId: deviceId } : prev);
     }
   }, [userName, deviceId]);
 
@@ -881,6 +878,7 @@ export default function EmergencyAssessment() {
   };
 
   async function saveCurrentAssessment(changes?: string[]) {
+    if (!data) return;
     const updatedPatient = {
       ...data,
       lastUpdated: new Date().toISOString(),
@@ -1115,13 +1113,15 @@ export default function EmergencyAssessment() {
   });
 
   const updateData = (field: keyof AssessmentData, value: any) => {
+    if (!data) return;
     const oldValue = data[field];
     if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
-      setData((prev) => ({ ...prev, [field]: value }));
+      setData((prev) => prev ? { ...prev, [field]: value } : prev);
     }
   };
 
   const toggleArrayItem = (field: keyof AssessmentData, item: string) => {
+    if (!data) return;
     const currentArray = data[field] as string[];
     const newArray = currentArray.includes(item)
       ? currentArray.filter((i) => i !== item)
@@ -1198,18 +1198,19 @@ export default function EmergencyAssessment() {
   };
 
   const generateSummary = () => {
+    if (!data) return "";
     const {
-      patientId,
-      name,
-      age,
-      gender,
-      gcs,
-      respiratoryRate,
-      spO2,
-      oxygenSupport,
-      bloodPressure,
-      heartRate,
-    } = data;
+      patientId = "",
+      name = "",
+      age = "",
+      gender = "",
+      gcs = "",
+      respiratoryRate = "",
+      spO2 = "",
+      oxygenSupport = "",
+      bloodPressure = "",
+      heartRate = "",
+    } = data || {};
 
     let summary = `${t.patientId}: ${patientId}`;
     if (name) summary += ` | ${t.patientName}: ${name}`;
@@ -1258,17 +1259,17 @@ export default function EmergencyAssessment() {
 
   const generateSummaryFromData = (assessmentData: AssessmentData) => {
     const {
-      patientId,
-      name,
-      age,
-      gender,
-      gcs,
-      respiratoryRate,
-      spO2,
-      oxygenSupport,
-      bloodPressure,
-      heartRate,
-    } = assessmentData;
+      patientId = "",
+      name = "",
+      age = "",
+      gender = "",
+      gcs = "",
+      respiratoryRate = "",
+      spO2 = "",
+      oxygenSupport = "",
+      bloodPressure = "",
+      heartRate = "",
+    } = assessmentData || {};
 
     let summary = `${t.patientId}: ${patientId}`;
     if (name) summary += ` | ${t.patientName}: ${name}`;
@@ -1326,10 +1327,10 @@ export default function EmergencyAssessment() {
 
   // QR Code Generation (replace your current generateQRCode function)
   const generateQRCode = async () => {
+    if (!data) return;
     try {
       // Create a copy of data without photos
-      const { photos, ...assessmentWithoutPhotos } = data;
-
+      const { photos, ...assessmentWithoutPhotos } = data || { photos: [], };
       const qrData: QRData = {
         version: "2.0",
         timestamp: new Date().toISOString(),
@@ -1667,6 +1668,7 @@ export default function EmergencyAssessment() {
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!data) return;
     if (e.target.files) {
       updateData("photos", [...data.photos, ...Array.from(e.target.files)]);
     }
@@ -1728,6 +1730,7 @@ export default function EmergencyAssessment() {
   };
 
   const generateQRFromPatient = async (patient: QRData) => {
+    if (!data) return;
     try {
       const qrUrl = `https://hack4-gaza-jxzyi4ege-yaqubs-projects-b2a15bac.vercel.app/patient/${data.patientId}`;
       const qrCodeDataURL = await QRCode.toDataURL(qrUrl);
@@ -1946,7 +1949,7 @@ export default function EmergencyAssessment() {
               </div>
               <div>
                 <strong>{t.lastUpdated}:</strong>{" "}
-                {new Date(data.lastUpdated).toLocaleString()}
+                {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : ""}
               </div>
             </div>
             <p className="text-sm text-gray-600">{t.scanToImport}</p>
@@ -1984,40 +1987,42 @@ export default function EmergencyAssessment() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="relative">
-              <video
-                ref={videoRef}
-                className="w-full rounded-lg"
-                autoPlay
-                playsInline
-                muted
-                style={{ maxHeight: "300px" }}
-              />
-              <canvas ref={canvasRef} className="hidden" />
-              <div className="absolute inset-0 border-2 border-red-500 rounded-lg pointer-events-none">
-                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-red-500"></div>
-                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-red-500"></div>
-                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-red-500"></div>
-                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-red-500"></div>
+            <div className="p-6 pt-0 space-y-4 flex flex-col items-center justify-center">
+              <div className="relative flex justify-center items-center" style={{ width: 300, height: 300 }}>
+                <video
+                  ref={videoRef}
+                  className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
+                  style={{ width: 300, height: 300 }}
+                  autoPlay
+                  playsInline
+                  muted
+                />
+                {/* Square scan area overlay, always centered and square */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="relative" style={{ width: 220, height: 220 }}>
+                    <div className="absolute inset-0 border-4 border-red-500 rounded-lg" />
+                    {/* Corner markers ... */}
+                  </div>
+                </div>
               </div>
-            </div>
-            <p className="text-sm text-gray-300 text-center">
-              {t.pointCameraAtQr}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                onClick={simulateQRScan}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                Simulate Scan (Demo)
-              </Button>
-              <Button
-                variant="outline"
-                onClick={stopScanning}
-                className="flex-1 bg-transparent"
-              >
-                {t.stopScanning}
-              </Button>
+              <p className="text-sm text-gray-300 text-center">
+                {t.pointCameraAtQr}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={simulateQRScan}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Simulate Scan (Demo)
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={stopScanning}
+                  className="flex-1 bg-transparent"
+                >
+                  {t.stopScanning}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -2385,9 +2390,7 @@ export default function EmergencyAssessment() {
   if (showSummary) {
     // Use editableData if we're editing a patient, otherwise use data for new assessments
     const summaryData = selectedPatient ? editableData : data;
-    const summary = selectedPatient
-      ? generateSummaryFromData(summaryData)
-      : generateSummary();
+    const summary = selectedPatient && summaryData ? generateSummaryFromData(summaryData) : generateSummary();
 
     return (
       <div
@@ -2412,7 +2415,7 @@ export default function EmergencyAssessment() {
               <div className="text-center">
                 <div className="text-sm opacity-90 mb-1">{t.patientId}</div>
                 <div className="text-3xl font-bold tracking-wider">
-                  {summaryData.patientId}
+                  {summaryData?.patientId}
                 </div>
               </div>
             </div>
@@ -2433,17 +2436,17 @@ export default function EmergencyAssessment() {
               <CardContent className="text-xs space-y-1">
                 <div>
                   <strong>{t.lastUpdatedBy}:</strong>{" "}
-                  {summaryData.lastUpdatedBy}
+                  {summaryData?.lastUpdatedBy}
                 </div>
                 <div>
-                  <strong>{t.deviceId}:</strong> {summaryData.deviceId}
+                  <strong>{t.deviceId}:</strong> {summaryData?.deviceId}
                 </div>
                 <div>
-                  <strong>{t.version}:</strong> {summaryData.version}
+                  <strong>{t.version}:</strong> {summaryData?.version}
                 </div>
                 <div>
                   <strong>{t.lastUpdated}:</strong>{" "}
-                  {new Date(summaryData.lastUpdated).toLocaleString()}
+                  {summaryData?.lastUpdated ? new Date(summaryData.lastUpdated).toLocaleString() : ""}
                 </div>
               </CardContent>
             </Card>
@@ -2455,10 +2458,10 @@ export default function EmergencyAssessment() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Select
-                  value={summaryData.outcome}
+                  value={summaryData?.outcome}
                   onValueChange={(value: AssessmentData["outcome"]) => {
                     if (value === "deceased") {
-                      setPatientToUpdate(summaryData.patientId);
+                      if (summaryData?.patientId) setPatientToUpdate(summaryData.patientId);
                       setShowDeceasedConfirm(true);
                     } else {
                       if (selectedPatient) {
@@ -2466,14 +2469,8 @@ export default function EmergencyAssessment() {
                       } else {
                         const oldData = { ...data };
                         updateData("outcome", value);
-                        // Save with detected changes
-                        setTimeout(() => {
-                          const changes = detectChanges(oldData, {
-                            ...data,
-                            outcome: value,
-                          });
-                          saveCurrentAssessment(changes);
-                        }, 100);
+                        const changes = data ? detectChanges(oldData, { ...data, outcome: value }) : [];
+                        saveCurrentAssessment(changes);
                       }
                     }
                   }}
@@ -2494,7 +2491,7 @@ export default function EmergencyAssessment() {
                   <Label htmlFor="outcome-notes">{t.outcomeNotes}</Label>
                   <Textarea
                     id="outcome-notes"
-                    value={summaryData.outcomeNotes}
+                    value={summaryData?.outcomeNotes}
                     onChange={(e) => {
                       if (selectedPatient) {
                         updateEditableData("outcomeNotes", e.target.value);
@@ -2509,15 +2506,15 @@ export default function EmergencyAssessment() {
 
                 <div
                   className={`px-3 py-2 rounded-lg text-sm ${getOutcomeColor(
-                    summaryData.outcome
+                    summaryData?.outcome ?? "pending"
                   )}`}
                 >
-                  {t.outcome}: {t[summaryData.outcome]}
+                  {t.outcome}: {t[summaryData?.outcome ?? "pending"]}
                 </div>
               </CardContent>
             </Card>
 
-            {summaryData.location && (
+            {summaryData?.location && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <MapPin className="h-4 w-4" />
                 {t.location}: {summaryData.location}
@@ -2928,8 +2925,8 @@ export default function EmergencyAssessment() {
                       </div>
 
                       <div className="text-xs text-gray-500 mt-1">
-                        {t.lastUpdatedBy}: {patient.lastUpdatedBy} (
-                        {patient.deviceId})
+                        {t.lastUpdatedBy}: {patient.lastUpdatedBy} ({
+                        patient.deviceId})
                       </div>
                     </CardContent>
                   </Card>
@@ -3052,11 +3049,7 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label htmlFor="edit-gender">{t.gender}</Label>
                       <Select
-                        value={
-                          typeof data.gender === "string"
-                            ? data.gender
-                            : undefined
-                        }
+                        value={typeof data?.gender === "string" ? data.gender : ""}
                         onValueChange={(value) => updateData("gender", value)}
                       >
                         <SelectTrigger>
@@ -3081,7 +3074,7 @@ export default function EmergencyAssessment() {
                         value={editableData.outcome}
                         onValueChange={(value: AssessmentData["outcome"]) => {
                           if (value === "deceased") {
-                            setPatientToUpdate(editableData.patientId);
+                            if (editableData.patientId) setPatientToUpdate(editableData.patientId);
                             setShowDeceasedConfirm(true);
                           } else {
                             updateEditableData("outcome", value);
@@ -3237,7 +3230,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.oxygenSupport}</Label>
                     <Select
-                      value={editableData.oxygenSupport}
+                      value={typeof data?.oxygenSupport === "string" ? data.oxygenSupport : ""}
                       onValueChange={(value) =>
                         updateEditableData("oxygenSupport", value)
                       }
@@ -3262,10 +3255,8 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.breathSounds}</Label>
                     <Select
-                      value={editableData.breathSounds}
-                      onValueChange={(value) =>
-                        updateEditableData("breathSounds", value)
-                      }
+                      value={typeof data?.breathSounds === "string" ? data.breathSounds : ""}
+                      onValueChange={(value) => updateData("breathSounds", value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -3358,11 +3349,7 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label>{t.capillaryRefill}</Label>
                       <Select
-                        value={
-                          typeof data.capillaryRefill === "string"
-                            ? data.capillaryRefill
-                            : undefined
-                        }
+                        value={typeof data?.capillaryRefill === "string" ? data.capillaryRefill : ""}
                         onValueChange={(value) =>
                           updateData("capillaryRefill", value)
                         }
@@ -3443,10 +3430,8 @@ export default function EmergencyAssessment() {
                     <div>
                       <Label>{t.gcsScore}</Label>
                       <Select
-                        value={editableData.gcs}
-                        onValueChange={(value) =>
-                          updateEditableData("gcs", value)
-                        }
+                        value={typeof data?.gcs === "string" ? data.gcs : ""}
+                        onValueChange={(value) => updateData("gcs", value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -3675,8 +3660,6 @@ export default function EmergencyAssessment() {
     );
   }
 
-
-
   // Main Assessment View
   return (
     <div
@@ -3744,7 +3727,7 @@ export default function EmergencyAssessment() {
                 <div className="bg-red-50 p-3 rounded-lg border-2 border-red-200 mb-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-2xl font-bold text-red-800 tracking-wider">
-                      {data.patientId}
+                      {data?.patientId}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -3797,7 +3780,7 @@ export default function EmergencyAssessment() {
                     <Label htmlFor="patient-name">{t.patientName}</Label>
                     <Input
                       id="patient-name"
-                      value={data.name}
+                      value={data?.name}
                       onChange={(e) => updateData("name", e.target.value)}
                       placeholder={t.enterPatientName}
                     />
@@ -3806,7 +3789,7 @@ export default function EmergencyAssessment() {
                     <Label htmlFor="age">{t.age}</Label>
                     <Input
                       id="age"
-                      value={data.age}
+                      value={data?.age}
                       onChange={(e) => updateData("age", e.target.value)}
                       placeholder={t.years}
                     />
@@ -3814,7 +3797,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label htmlFor="gender">{t.gender}</Label>
                     <Select
-                      value={data.gender}
+                      value={typeof data?.gender === "string" ? data.gender : ""}
                       onValueChange={(value) => updateData("gender", value)}
                     >
                       <SelectTrigger>
@@ -3856,14 +3839,14 @@ export default function EmergencyAssessment() {
                   </div>
                 </div>
 
-                {data.location && (
+                {data?.location && (
                   <div className="text-sm text-gray-600">
                     <MapPin className="h-4 w-4 inline mr-1" />
                     {t.location}: {data.location}
                   </div>
                 )}
 
-                {data.photos.length > 0 && (
+                {(data?.photos?.length ?? 0) > 0 && (
                   <div className="text-sm text-gray-600">
                     <Camera className="h-4 w-4 inline mr-1" />
                     {data.photos.length} {t.photosSelected}
@@ -3886,7 +3869,7 @@ export default function EmergencyAssessment() {
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <Switch
-                    checked={data.airwayPatent}
+                    checked={data?.airwayPatent}
                     onCheckedChange={(checked) =>
                       updateData("airwayPatent", checked)
                     }
@@ -3894,11 +3877,11 @@ export default function EmergencyAssessment() {
                   <Label>{t.airwayPatent}</Label>
                 </div>
 
-                {!data.airwayPatent && (
+                {!data?.airwayPatent && (
                   <div>
                     <Label>{t.obstructionDetails}</Label>
                     <Input
-                      value={data.airwayObstruction}
+                      value={data?.airwayObstruction}
                       onChange={(e) =>
                         updateData("airwayObstruction", e.target.value)
                       }
@@ -3921,7 +3904,7 @@ export default function EmergencyAssessment() {
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          checked={data.airwayInterventions.includes(
+                          checked={data?.airwayInterventions.includes(
                             intervention.en
                           )}
                           onCheckedChange={() =>
@@ -3959,7 +3942,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.respiratoryRate}</Label>
                     <Input
-                      value={data.respiratoryRate}
+                      value={data?.respiratoryRate}
                       onChange={(e) =>
                         updateData("respiratoryRate", e.target.value)
                       }
@@ -3970,7 +3953,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>SpO₂</Label>
                     <Input
-                      value={data.spO2}
+                      value={data?.spO2}
                       onChange={(e) => updateData("spO2", e.target.value)}
                       placeholder="%"
                       type="number"
@@ -3981,11 +3964,7 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.oxygenSupport}</Label>
                   <Select
-                    value={
-                      typeof data.oxygenSupport === "string"
-                        ? data.oxygenSupport
-                        : undefined
-                    }
+                    value={typeof data?.oxygenSupport === "string" ? data.oxygenSupport : ""}
                     onValueChange={(value) =>
                       updateData("oxygenSupport", value)
                     }
@@ -4010,11 +3989,7 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.breathSounds}</Label>
                   <Select
-                    value={
-                      typeof data.breathSounds === "string"
-                        ? data.breathSounds
-                        : undefined
-                    }
+                    value={typeof data?.breathSounds === "string" ? data.breathSounds : ""}
                     onValueChange={(value) => updateData("breathSounds", value)}
                   >
                     <SelectTrigger>
@@ -4046,7 +4021,7 @@ export default function EmergencyAssessment() {
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          checked={data.breathingConcerns.includes(concern.en)}
+                          checked={data?.breathingConcerns.includes(concern.en)}
                           onCheckedChange={() =>
                             toggleArrayItem("breathingConcerns", concern.en)
                           }
@@ -4077,7 +4052,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.heartRate}</Label>
                     <Input
-                      value={data.heartRate}
+                      value={data?.heartRate}
                       onChange={(e) => updateData("heartRate", e.target.value)}
                       placeholder={t.bpm}
                       type="number"
@@ -4086,7 +4061,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.bloodPressure}</Label>
                     <Input
-                      value={data.bloodPressure}
+                      value={data?.bloodPressure}
                       onChange={(e) =>
                         updateData("bloodPressure", e.target.value)
                       }
@@ -4099,7 +4074,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.capillaryRefill}</Label>
                     <Select
-                      value={data.capillaryRefill}
+                      value={data?.capillaryRefill}
                       onValueChange={(value) =>
                         updateData("capillaryRefill", value)
                       }
@@ -4117,7 +4092,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.pulseQuality}</Label>
                     <Select
-                      value={data.pulseQuality}
+                      value={data?.pulseQuality}
                       onValueChange={(value) =>
                         updateData("pulseQuality", value)
                       }
@@ -4137,7 +4112,7 @@ export default function EmergencyAssessment() {
 
                 <div className="flex items-center space-x-2">
                   <Switch
-                    checked={data.bleeding}
+                    checked={data?.bleeding}
                     onCheckedChange={(checked) =>
                       updateData("bleeding", checked)
                     }
@@ -4145,11 +4120,11 @@ export default function EmergencyAssessment() {
                   <Label>{t.externalBleeding}</Label>
                 </div>
 
-                {data.bleeding && (
+                {data?.bleeding && (
                   <div>
                     <Label>{t.bleedingLocation}</Label>
                     <Input
-                      value={data.bleedingLocation}
+                      value={data?.bleedingLocation}
                       onChange={(e) =>
                         updateData("bleedingLocation", e.target.value)
                       }
@@ -4176,9 +4151,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.gcsScore}</Label>
                     <Select
-                      value={
-                        typeof data.gcs === "string" ? data.gcs : undefined
-                      }
+                      value={typeof data?.gcs === "string" ? data.gcs : ""}
                       onValueChange={(value) => updateData("gcs", value)}
                     >
                       <SelectTrigger>
@@ -4198,11 +4171,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.pupils}</Label>
                     <Select
-                      value={
-                        typeof data.pupils === "string"
-                          ? data.pupils
-                          : undefined
-                      }
+                      value={typeof data?.pupils === "string" ? data.pupils : ""}
                       onValueChange={(value) => updateData("pupils", value)}
                     >
                       <SelectTrigger>
@@ -4223,14 +4192,8 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.motorResponse}</Label>
                   <Select
-                    value={
-                      typeof data.motorResponse === "string"
-                        ? data.motorResponse
-                        : undefined
-                    }
-                    onValueChange={(value) =>
-                      updateData("motorResponse", value)
-                    }
+                    value={typeof data?.motorResponse === "string" ? data.motorResponse : ""}
+                    onValueChange={(value) => updateData("motorResponse", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -4258,7 +4221,7 @@ export default function EmergencyAssessment() {
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          checked={data.neurologicalConcerns.includes(
+                          checked={data?.neurologicalConcerns.includes(
                             concern.en
                           )}
                           onCheckedChange={() =>
@@ -4291,7 +4254,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.temperature}</Label>
                     <Input
-                      value={data.temperature}
+                      value={data?.temperature}
                       onChange={(e) =>
                         updateData("temperature", e.target.value)
                       }
@@ -4301,7 +4264,7 @@ export default function EmergencyAssessment() {
                   <div>
                     <Label>{t.skinCondition}</Label>
                     <Select
-                      value={data.skinCondition}
+                      value={data?.skinCondition}
                       onValueChange={(value) =>
                         updateData("skinCondition", value)
                       }
@@ -4338,7 +4301,7 @@ export default function EmergencyAssessment() {
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          checked={data.injuries.includes(injury.en)}
+                          checked={data?.injuries.includes(injury.en)}
                           onCheckedChange={() =>
                             toggleArrayItem("injuries", injury.en)
                           }
@@ -4354,7 +4317,7 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.additionalConcerns}</Label>
                   <Textarea
-                    value={data.exposureConcerns}
+                    value={data?.exposureConcerns}
                     onChange={(e) =>
                       updateData("exposureConcerns", e.target.value)
                     }
@@ -4366,7 +4329,7 @@ export default function EmergencyAssessment() {
                 <div>
                   <Label>{t.additionalNotes}</Label>
                   <Textarea
-                    value={data.additionalNotes}
+                    value={data?.additionalNotes}
                     onChange={(e) =>
                       updateData("additionalNotes", e.target.value)
                     }
