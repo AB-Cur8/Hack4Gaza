@@ -14,6 +14,22 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
+  // Move stopCamera outside useEffect
+  function stopCamera() {
+    console.log("QRScanner: Stopping camera...");
+    const stream = videoRef.current?.srcObject as MediaStream;
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        console.log("QRScanner: Stopping track:", track.kind);
+        track.stop();
+      });
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+  }
+
   useEffect(() => {
     console.log("QRScanner: Component mounted, starting camera...");
     isUnmounted.current = false;
@@ -95,18 +111,6 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
       }
     }
 
-    function stopCamera() {
-      console.log("QRScanner: Stopping camera...");
-      const stream = videoRef.current?.srcObject as MediaStream;
-      if (stream) {
-        stream.getTracks().forEach((track) => {
-          console.log("QRScanner: Stopping track:", track.kind);
-          track.stop();
-        });
-      }
-      setIsCameraActive(false);
-    }
-
     function scan() {
       if (!canvasRef.current || !videoRef.current) {
         console.log("QRScanner: Canvas or video not ready for scanning");
@@ -143,8 +147,14 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
           console.log("QRScanner: QR code detected:", code.data);
           console.log("QRScanner: QR code data length:", code.data.length);
           console.log("QRScanner: QR code data preview:", code.data.substring(0, 100) + "...");
-          onDetected(code.data);
+          // Stop camera before calling onDetected
           stopCamera();
+          // Add a small delay to ensure camera is released before state changes
+          setTimeout(() => {
+            if (!isUnmounted.current) {
+              onDetected(code.data);
+            }
+          }, 150);
         } else if (!isUnmounted.current) {
           animationFrameId.current = requestAnimationFrame(scan);
         }
@@ -161,7 +171,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
     return () => {
       console.log("QRScanner: Component unmounting, cleaning up...");
       isUnmounted.current = true;
-      stopCamera();
+      stopCamera(); // Ensure camera is stopped and video element is cleared
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
       }
@@ -209,8 +219,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
         className="mt-4 px-4 py-2 bg-white text-black rounded font-medium"
         onClick={() => {
           console.log("QRScanner: Close button clicked");
-          const stream = videoRef.current?.srcObject as MediaStream;
-          stream?.getTracks().forEach((track) => track.stop());
+          stopCamera(); // Ensure camera is stopped and video element is cleared
           onClose();
         }}
       >

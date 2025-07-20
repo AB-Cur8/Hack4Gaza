@@ -2661,14 +2661,6 @@ export default function EmergencyAssessment() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentView("assessment")}
-                className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
-              >
-                {t.newAssessment}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={toggleLanguage}
                 className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
               >
@@ -2816,6 +2808,14 @@ export default function EmergencyAssessment() {
             </div>
           )}
         </div>
+        {/* Floating New Assessment Button */}
+        <button
+          onClick={() => setCurrentView("assessment")}
+          className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg w-16 h-16 flex items-center justify-center text-3xl focus:outline-none"
+          aria-label="New Assessment"
+        >
+          +
+        </button>
       </div>
     );
   }
@@ -2834,22 +2834,6 @@ export default function EmergencyAssessment() {
               <h1 className="text-lg font-bold">Edit Patient</h1>
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={savePatientChanges}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Save Changes
-              </Button>
-              <Button
-                onClick={() => {
-                  // Generate summary for the selected patient and show it
-                  setShowSummary(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <FileText className="h-4 w-4 mr-1" />
-                {t.generateSummary}
-              </Button>
               <Button
                 onClick={() => generateQRFromPatient(selectedPatient)}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -3527,13 +3511,6 @@ export default function EmergencyAssessment() {
             >
               <FileText className="h-4 w-4 mr-2" />
               {t.generateSummary}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentView("patientList")}
-              className="flex-1"
-            >
-              Cancel
             </Button>
           </div>
         </div>
