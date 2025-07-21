@@ -2932,7 +2932,6 @@ export default function EmergencyAssessment() {
                         <SelectContent>
                           <SelectItem value="M">{t.male}</SelectItem>
                           <SelectItem value="F">{t.female}</SelectItem>
-                          <SelectItem value="NB">{t.nonBinary}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3673,7 +3672,6 @@ export default function EmergencyAssessment() {
                       <SelectContent>
                         <SelectItem value="M">{t.male}</SelectItem>
                         <SelectItem value="F">{t.female}</SelectItem>
-                        <SelectItem value="NB">{t.nonBinary}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
