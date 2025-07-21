@@ -1,5 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import jsQR from "jsqr";
+import CryptoJS from "crypto-js";
+
 
 interface QRScannerProps {
   onDetected: (data: string) => void;
@@ -33,7 +35,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
   useEffect(() => {
     console.log("QRScanner: Component mounted, starting camera...");
     isUnmounted.current = false;
-    
+
     async function startCamera() {
       // Check if we're in a browser environment
       if (typeof window === "undefined") {
@@ -51,7 +53,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
 
       try {
         console.log("QRScanner: Requesting camera access...");
-        
+
         // Request camera with more specific constraints
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -67,7 +69,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          
+
           // Wait for video to be ready
           videoRef.current.onloadedmetadata = () => {
             console.log("QRScanner: Video metadata loaded");
@@ -94,7 +96,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
       } catch (err) {
         console.error("QRScanner: Camera access error:", err);
         let errorMessage = "Could not access camera.";
-        
+
         if (err instanceof Error) {
           if (err.name === "NotAllowedError") {
             errorMessage = "Camera access denied. Please allow camera access and try again.";
@@ -106,7 +108,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
             errorMessage = `Camera error: ${err.message}`;
           }
         }
-        
+
         setCameraError(errorMessage);
       }
     }
@@ -120,7 +122,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
       const ctx = canvas.getContext("2d");
-      
+
       if (!ctx) {
         console.log("QRScanner: Could not get canvas context");
         return;
@@ -139,22 +141,29 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
-        
+
         if (code) {
-          console.log("QRScanner: QR code detected:", code.data);
-          console.log("QRScanner: QR code data length:", code.data.length);
-          console.log("QRScanner: QR code data preview:", code.data.substring(0, 100) + "...");
-          // Stop camera before calling onDetected
-          stopCamera();
-          // Add a small delay to ensure camera is released before state changes
-          setTimeout(() => {
-            if (!isUnmounted.current) {
-              onDetected(code.data);
-            }
-          }, 150);
+          console.log("QRScanner: Encrypted data:", code.data);
+
+          // Decrypt the scanned data
+          try {
+            const decryptedBytes = CryptoJS.AES.decrypt(code.data, process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION);
+            const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+            const parsedData = JSON.parse(decryptedText);
+
+            stopCamera();
+            setTimeout(() => {
+              if (!isUnmounted.current) {
+                onDetected(parsedData); // Send decrypted object to parent
+              }
+            }, 150);
+          } catch (error) {
+            console.error("QRScanner: Failed to decrypt QR data", error);
+            setCameraError("Invalid or tampered QR code.");
+          }
         } else if (!isUnmounted.current) {
           animationFrameId.current = requestAnimationFrame(scan);
         }
@@ -201,20 +210,20 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
         </div>
       </div>
       <canvas ref={canvasRef} className="hidden" />
-      
+
       {/* Status indicator */}
       {!isCameraActive && !cameraError && (
         <div className="text-white bg-blue-600 bg-opacity-80 rounded p-2 mt-4 text-center max-w-xs">
           Starting camera...
         </div>
       )}
-      
+
       {cameraError && (
         <div className="text-red-500 bg-white bg-opacity-80 rounded p-2 mt-4 text-center max-w-xs">
           {cameraError}
         </div>
       )}
-      
+
       <button
         className="mt-4 px-4 py-2 bg-white text-black rounded font-medium"
         onClick={() => {

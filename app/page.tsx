@@ -43,6 +43,7 @@ import { savePatient } from "@/lib/patientService";
 import { supabase } from "@/lib/supabase"; // Adjust the import path as needed
 
 import QRCode from "qrcode";
+import CryptoJS from 'crypto-js';
 import jsQR from "jsqr";
 import QRScanner from "../components/qr-scanner"; // adjust path if needed
 
@@ -1320,7 +1321,11 @@ export default function EmergencyAssessment() {
     return summary;
   };
 
-  function handleQRScanned(data: string) {
+  function handleQRScanned(objData: string) {
+
+    const data = JSON.stringify(objData);
+
+
     console.log("QR Code Scanned:", data);
     console.log("QR Code Data Length:", data.length);
     console.log("QR Code Data Preview:", data.substring(0, 100) + "...");
@@ -1384,6 +1389,8 @@ export default function EmergencyAssessment() {
         changeLog: data.changeLog,
       };
 
+      console.log(process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION)
+
       // Rest of your function...
 
       // Save current assessment before generating QR
@@ -1391,8 +1398,10 @@ export default function EmergencyAssessment() {
 
       // Generate QR code with the actual patient data
       const qrDataString = JSON.stringify(qrData);
-      console.log("Generating QR code with data:", qrDataString.substring(0, 200) + "...");
-      const qrCodeDataURL = await QRCode.toDataURL(qrDataString, {
+      const encrypted = CryptoJS.AES.encrypt(qrDataString, process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION).toString();
+      console.log("Generating QR code with encrypted data:", encrypted.substring(0, 100) + "...");
+      // console.log("Generating QR code with data:", qrDataString.substring(0, 200) + "...");
+      const qrCodeDataURL = await QRCode.toDataURL(encrypted, {
         width: 400,
         margin: 2,
         color: {
