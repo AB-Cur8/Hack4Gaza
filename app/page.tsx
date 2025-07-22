@@ -1389,7 +1389,6 @@ export default function EmergencyAssessment() {
         changeLog: data.changeLog,
       };
 
-      console.log(process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION)
 
       // Rest of your function...
 
@@ -1398,7 +1397,7 @@ export default function EmergencyAssessment() {
 
       // Generate QR code with the actual patient data
       const qrDataString = JSON.stringify(qrData);
-      const encrypted = CryptoJS.AES.encrypt(qrDataString, process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION).toString();
+      const encrypted = CryptoJS.AES.encrypt(qrDataString, "GACp0xq7o0LXokGC9U9uYKeR3OCXWABfPutwyc55zQ").toString();
       console.log("Generating QR code with encrypted data:", encrypted.substring(0, 100) + "...");
       // console.log("Generating QR code with data:", qrDataString.substring(0, 200) + "...");
       const qrCodeDataURL = await QRCode.toDataURL(encrypted, {

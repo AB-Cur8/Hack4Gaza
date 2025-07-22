@@ -150,7 +150,7 @@ export default function QRScanner({ onDetected, onClose }: QRScannerProps) {
 
           // Decrypt the scanned data
           try {
-            const decryptedBytes = CryptoJS.AES.decrypt(code.data, process.env.NEXT_PUBLIC_SECRETKEY_ENCRYPTION);
+            const decryptedBytes = CryptoJS.AES.decrypt(code.data, "GACp0xq7o0LXokGC9U9uYKeR3OCXWABfPutwyc55zQ");
             const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
             const parsedData = JSON.parse(decryptedText);
 
